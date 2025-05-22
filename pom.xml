@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.camunda.loanwithresult</groupId>
-    <artifactId>loanwithresult</artifactId>
+    <artifactId>CranberryLoanApplication</artifactId>
     <version>1.0.0</version>
 
     <properties>
