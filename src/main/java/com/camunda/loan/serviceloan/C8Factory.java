@@ -18,8 +18,9 @@ import java.time.Duration;
 @Component
 public class C8Factory {
     Logger logger = LoggerFactory.getLogger(C8Factory.class.getName());
+    ZeebeClient zeebeClient;
+    WithResultAPI withResultAPI;
     private CamundaTaskListClient taskClient;
-
     @Value("${camunda.client.mode}")
     private String mode;
     @Value("${camunda.client.tasklist.rest-address}")
@@ -28,9 +29,6 @@ public class C8Factory {
     private String taskListUserName;
     @Value("${camunda.client.tasklist.user-password:}")
     private String taskListUserPassword;
-
-    ZeebeClient zeebeClient;
-    WithResultAPI withResultAPI;
 
     C8Factory(ZeebeClient zeebeClient) {
         this.zeebeClient = zeebeClient;

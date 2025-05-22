@@ -39,19 +39,19 @@ public class GetLoanInformationWorker {
         logger.debug("GetLoanInformation");
         Map<String, Object> resultMap = new HashMap<>();
         try {
-            String message="";
+            String message = "";
             if (activatedJob.getVariablesAsMap().containsKey("reviewDecision")) {
                 Boolean reviewDecision = (Boolean) activatedJob.getVariable("reviewDecision");
                 message += "Reviewer " + (reviewDecision ? "Approved" : "Rejected");
             }
-            message+=" Internal decision:"+listMessages[(int) (Math.random() * listMessages.length)];
+            message += " Internal decision:" + listMessages[(int) (Math.random() * listMessages.length)];
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
-            message += " at "+LocalDateTime.now().format(formatter);
+            message += " at " + LocalDateTime.now().format(formatter);
 
             resultMap.put(VARIABLE_LOAN_INFO, message);
             logger.info("GetLoanInformation: Loan Id[{}]  Status: [{}]", loanId, resultMap.get(VARIABLE_LOAN_INFO));
             try {
-                Thread.sleep(1000 * 1);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
             }
 

@@ -14,8 +14,8 @@ public class DeepReviewWorker {
     Logger logger = LoggerFactory.getLogger(DeepReviewWorker.class.getName());
 
     @JobWorker(type = "loan-deep-review")
-    public Map<String,Object> deepReview(JobClient jobClient,
-                                             @Variable(name = "amount") Integer amount) {
+    public Map<String, Object> deepReview(JobClient jobClient,
+                                          @Variable(name = "amount") Integer amount) {
         logger.info("Deep review started amount [{}]", amount);
         if (amount <= 5000) {
             return Map.of("loanAcceptance", "green", "rewiewNeeded", Boolean.FALSE);

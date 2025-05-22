@@ -6,27 +6,24 @@ import io.camunda.tasklist.dto.Task;
 import io.camunda.tasklist.dto.TaskList;
 import io.camunda.tasklist.dto.TaskSearch;
 import io.camunda.tasklist.exception.TaskListException;
-import io.camunda.zeebe.client.ZeebeClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Component
 public class ServiceLoan {
-    Logger logger = LoggerFactory.getLogger(ServiceLoan.class.getName());
-
-    public Map<String, Loan> mapLoan = new HashMap<>();
-
     // Needed for the withResultAPI
-    WithResultC8Impl withResultC8Impl;
-    ZeebeClient zeebeClient;
-    WithResultAPIImpl withResultAPIImpl;
-    C8Factory c8Factory;
-
+    final WithResultC8Impl withResultC8Impl;
+    final WithResultAPIImpl withResultAPIImpl;
+    final C8Factory c8Factory;
+    final private IMPLEMENTATION implementation = IMPLEMENTATION.WITHRESULT;
+    Logger logger = LoggerFactory.getLogger(ServiceLoan.class.getName());
+    private final Map<String, Loan> mapLoan = new HashMap<>();
     ServiceLoan(WithResultC8Impl withResultC8Impl, WithResultAPIImpl withResultAPIImpl, C8Factory c8Factory) {
         this.withResultC8Impl = withResultC8Impl;
         this.withResultAPIImpl = withResultAPIImpl;
@@ -45,10 +42,9 @@ public class ServiceLoan {
     }
 
     /**
-     *
-     * @param loanId
-     * @param decision
-     * @return
+     * @param loanId   loan Id
+     * @param decision decision to accept it or reject it
+     * @return loan information
      */
     public Map<String, Object> reviewLoan(String loanId, boolean decision) {
         logger.info("----- Start review LoanId [{}]", loanId);
@@ -64,28 +60,28 @@ public class ServiceLoan {
             if (taskList.size() != 1) {
                 return Map.of("status", "task not found");
             }
-            Map<String,Object> result= withResultAPIImpl.executeUserTaskWithResult(loan, taskList.get(0), decision);
+            Map<String, Object> result = executeUserTaskSynchronousExecution(loan, taskList.get(0), decision);
 
 
             // Update the loan status:
-            loan.statusLoan = decision ? Loan.STATUSLOAN.ACCEPTED: Loan.STATUSLOAN.REJECTED;
+            loan.statusLoan = decision ? Loan.STATUSLOAN.ACCEPTED : Loan.STATUSLOAN.REJECTED;
             loan.messageInternal = (String) result.getOrDefault(GetLoanInformationWorker.VARIABLE_LOAN_INFO, null);
             mapLoan.put(loan.ssn, loan);
 
 
-            logger.info("----- End review LoanId {}", loanId, result.get(GetInformationWorker.VARIABLE_LOAN));
+            logger.info("----- End review LoanId {} variablesLoan[{}]", loanId, result.get(GetInformationWorker.VARIABLE_LOAN));
             return loan.getMap();
         } catch (TaskListException e) {
-            logger.error("----- review LoanId {} Task not found", loanId);
+            logger.error("----- review LoanId [{}} Task not found", loanId);
 
             return Map.of("status", "task not found");
         }
     }
 
-    public Map<String,Object> getLoanInformation(String ssn) {
+    public Map<String, Object> getLoanInformation(String ssn) {
         logger.info("----- Start getLoanInformation ssn [{}]", ssn);
 
-        Map<String,Object> info= executeMessageSynchronouslyExecution(ssn);
+        Map<String, Object> info = executeMessageSynchronouslyExecution(ssn);
 
         logger.info("----- End getLoanInformation ssn [{}] info [{}]", ssn, info);
         return info;
@@ -93,7 +89,8 @@ public class ServiceLoan {
 
     /**
      * Get the list of loan
-     * @return
+     *
+     * @return list of Loans map
      */
     public List<Map<String, Object>> getListLoans() {
         return mapLoan.values().stream()
@@ -103,6 +100,24 @@ public class ServiceLoan {
 
     private Loan getLoanById(String loanId) {
         return mapLoan.values().stream().filter(loan -> loan.loanId.equals(loanId)).findFirst().orElse(null);
+    }
+
+    /**
+     * Here you are: you have to implement these methods now
+     *
+     * @param loan to create. Information must be fulfill in the loan object (creditScore...)
+     */
+    private void createProcessInstanceSynchronousExecution(Loan loan) {
+        switch (implementation) {
+            case C8:
+                withResultC8Impl.createProcessInstanceWithResult(loan);
+                break;
+            case WITHRESULT:
+                withResultAPIImpl.createProcessInstanceWithResult(loan);
+                break;
+            case MINE:
+                // It's up to you
+        }
     }
 
 
@@ -117,29 +132,44 @@ public class ServiceLoan {
     /* ******************************************************************** */
 
     /**
-     * Here you are: you have to implement these methods now
-     * @param loan to create. Information must be fulfill in the loan object (creditScore...)
-     */
-    private void createProcessInstanceSynchronousExecution(Loan loan) {
-        // withResultC8Impl.createProcessInstanceWithResult(loan);
-        withResultAPIImpl.createProcessInstanceWithResult(loan);
-    }
-
-    /**
      * Execute a user task
-     * @param loan loan to execute the review
-     * @param task task to execute
+     *
+     * @param loan     loan to execute the review
+     * @param task     task to execute
      * @param decision decision schoose
      * @return the different information around the loan
      */
     private Map<String, Object> executeUserTaskSynchronousExecution(Loan loan, Task task, boolean decision) {
-        return withResultAPIImpl.executeUserTaskWithResult(loan, task, decision);
+        switch (implementation) {
+            case C8:
+                // Not exist
+                return Collections.emptyMap();
+            case WITHRESULT:
+                return withResultAPIImpl.executeUserTaskWithResult(loan, task, decision);
+            case MINE:
+                // It's up to you
+                return Collections.emptyMap();
+        }
+        return Collections.emptyMap();
+
+    }
+
+    public Map<String, Object> executeMessageSynchronouslyExecution(String ssn) {
+        switch (implementation) {
+            case C8:
+                // Not exist
+                return Collections.emptyMap();
+            case WITHRESULT:
+                return withResultAPIImpl.executeMessageWithResult(ssn);
+            case MINE:
+                // It's up to you
+                return Collections.emptyMap();
+        }
+        return Collections.emptyMap();
     }
 
 
-    public Map<String,Object> executeMessageSynchronouslyExecution(String ssn) {
-        return withResultAPIImpl.executeMessageWithResult(ssn);
-    }
+    enum IMPLEMENTATION {C8, WITHRESULT, MINE}
 
 
 }

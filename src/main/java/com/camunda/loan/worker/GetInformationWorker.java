@@ -29,6 +29,7 @@ public class GetInformationWorker {
             "Depardieu", "Huppert", "Lhermitte", "Auteuil", "Adjani", "Belmondo", "Delon", "Marceau", "Cluzet", "Bohringer",
             "Hardy", "Ardant", "Bouquet", "Lonsdale", "Noiret", "Blier", "Villeret", "Signoret", "Montand", "Trintignant"
     };
+
     @JobWorker(type = "get-information")
     public Map<String, Object> getInformation(JobClient jobClient,
                                               ActivatedJob activatedJob,
@@ -37,10 +38,10 @@ public class GetInformationWorker {
         // SSN is "123-45-6789"
         try {
             int firstSSN = Integer.parseInt(ssn.substring(0, 3));
-            int lastSSN = Integer.parseInt(ssn.substring(7, 7+4));
+            int lastSSN = Integer.parseInt(ssn.substring(7, 7 + 4));
             Map<String, Object> resultMap = new HashMap<>();
             resultMap.put(VARIABLE_AGE, firstSSN % 50 + 20);
-            resultMap.put(VARIABLE_CREDIT_SCORE, Math.max(lastSSN % 1000,300));
+            resultMap.put(VARIABLE_CREDIT_SCORE, Math.max(lastSSN % 1000, 300));
             resultMap.put(VARIABLE_LOAN_ID, String.valueOf(activatedJob.getProcessInstanceKey()));
             resultMap.put(VARIABLE_LAST_NAME, listActors[(int) (Math.random() * listActors.length)]);
             resultMap.put(VARIABLE_LOAN, "HOLD");

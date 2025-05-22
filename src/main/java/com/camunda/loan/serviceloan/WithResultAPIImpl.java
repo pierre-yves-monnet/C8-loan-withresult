@@ -11,8 +11,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class WithResultAPIImpl {
@@ -20,6 +22,7 @@ public class WithResultAPIImpl {
 
     C8Factory c8Factory;
     WithResultAPI withResultAPI;
+
     WithResultAPIImpl(C8Factory c8Factory) {
         this.c8Factory = c8Factory;
         withResultAPI = new WithResultAPI(c8Factory.getZeebeClient(), c8Factory.getTaskListClient(), true, ResultWorker.WorkerImplementation.HOST);
@@ -27,12 +30,12 @@ public class WithResultAPIImpl {
 
     protected void createProcessInstanceWithResult(Loan loan) {
         try {
-            ExecuteWithResult executeWithResult=withResultAPI.processInstanceWithResult("CranberryApplication",
-                    loan.getMap(),  "cranberry-with-result",Duration.ofSeconds(5)).join();
+            ExecuteWithResult executeWithResult = withResultAPI.processInstanceWithResult("CranberryApplication",
+                    loan.getMap(), "cranberry-with-result", Duration.ofSeconds(5)).join();
 
-            loan.statusRequest = executeWithResult.timeOut? Loan.STATUSREQUEST.IN_PROGRESS : Loan.STATUSREQUEST.COMPLETED;
-            loan.loanId = String.valueOf(executeWithResult.processInstanceKey==null? "":executeWithResult.processInstanceKey);
-            if (! executeWithResult.timeOut) {
+            loan.statusRequest = executeWithResult.timeOut ? Loan.STATUSREQUEST.IN_PROGRESS : Loan.STATUSREQUEST.COMPLETED;
+            loan.loanId = String.valueOf(executeWithResult.processInstanceKey == null ? "" : executeWithResult.processInstanceKey);
+            if (!executeWithResult.timeOut) {
 
                 loan.statusLoan = Loan.STATUSLOAN.valueOf((String) executeWithResult.processVariables.getOrDefault(LoanDecisionWorker.VARIABLE_STATUS_LOAN, null));
                 loan.loanRiskAcceptance = (String) executeWithResult.processVariables.getOrDefault(LoanDecisionWorker.VARIABLE_LOAN_RISK_ACCEPTANCE, null);
@@ -50,17 +53,16 @@ public class WithResultAPIImpl {
     }
 
 
-    protected Map<String,Object> executeUserTaskWithResult(Loan loan, Task task, boolean decision) {
+    protected Map<String, Object> executeUserTaskWithResult(Loan loan, Task task, boolean decision) {
         Map variables = new HashMap<>();
         variables.put("deepReview", Boolean.FALSE);
         variables.put("reviewDecision", decision);
         try {
             ExecuteWithResult executeWithResult = (ExecuteWithResult) withResultAPI.executeTaskWithResult(task,
                     true, "demo", variables, "cranberry-with-result", Duration.ofSeconds(5)).join();
-            if (! executeWithResult.timeOut) {
+            if (!executeWithResult.timeOut) {
                 return executeWithResult.processVariables;
-            }
-            else {
+            } else {
                 return Map.of("status", "execution in progress");
             }
         } catch (Exception e) {
@@ -71,20 +73,18 @@ public class WithResultAPIImpl {
     }
 
 
-
-    public Map<String,Object> executeMessageWithResult(String ssn) {
+    public Map<String, Object> executeMessageWithResult(String ssn) {
         try {
-            ExecuteWithResult executeWithResult = (ExecuteWithResult) withResultAPI.publishNewMessageWithResult(
+            ExecuteWithResult executeWithResult = withResultAPI.publishNewMessageWithResult(
                     "loan-get-information",
                     ssn,
                     Duration.ofMinutes(1), // loan must be here
                     Collections.emptyMap(),
                     "cranberry-with-result",
                     Duration.ofSeconds(5)).join();
-            if (! executeWithResult.timeOut) {
+            if (!executeWithResult.timeOut) {
                 return executeWithResult.processVariables;
-            }
-            else {
+            } else {
                 return Map.of("status", "No answer");
             }
         } catch (Exception e) {

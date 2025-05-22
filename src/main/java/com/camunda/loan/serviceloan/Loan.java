@@ -5,10 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Loan {
-    public enum STATUSREQUEST {NO_COMPLETION, IN_PROGRESS, COMPLETED}
-
-    public enum STATUSLOAN {ACCEPTED, REJECTED, REVIEW}
-
     public STATUSREQUEST statusRequest;
     public STATUSLOAN statusLoan;
     public String info;
@@ -37,9 +33,12 @@ public class Loan {
         result.put("amount", amount);
         result.put("messageCustomer", messageCustomer == null ? "" : messageCustomer);
         result.put("messageInternal", messageInternal == null ? "" : messageInternal);
-        result.put("dateAcceptance", dateAcceptance == null ? "" : dateAcceptance.toString() + "");
+        result.put("dateAcceptance", dateAcceptance == null ? "" : dateAcceptance.toString());
         return result;
     }
+    public enum STATUSREQUEST {NO_COMPLETION, IN_PROGRESS, COMPLETED}
+
+    public enum STATUSLOAN {ACCEPTED, REJECTED, REVIEW}
 
 
 }
