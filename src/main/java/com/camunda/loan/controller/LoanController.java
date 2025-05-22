@@ -2,7 +2,6 @@
 package com.camunda.loan.controller;
 
 import com.camunda.loan.serviceloan.ServiceLoan;
-import io.camunda.executewithresult.worker.DelayWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +29,18 @@ public class LoanController {
     @GetMapping("loan/list")
     public List<Map<String,Object>> listLoans() {
         return serviceLoan.getListLoans();
+    }
+
+    @PutMapping("loan/review")
+    public Map<String,Object> reviewLoan( @RequestBody Map<String,Object>information) {
+        String loanId = information.get("loanId").toString();
+        String decision =information.get("decision").toString();
+        return serviceLoan.reviewLoan(loanId, "true".equalsIgnoreCase(decision));
+    }
+    @GetMapping("loan/info")
+    public Map<String,Object> loanInformation(@RequestParam String ssn)
+    {
+        return serviceLoan.getLoanInformation(ssn);
     }
 
 }

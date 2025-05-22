@@ -1,5 +1,6 @@
 package com.camunda.loan.worker;
 
+import com.camunda.loan.serviceloan.Loan;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.spring.client.annotation.JobWorker;
 import io.camunda.zeebe.spring.client.annotation.Variable;
@@ -11,6 +12,12 @@ import java.util.Map;
 
 @Component
 public class LoanDecisionWorker {
+    public static final String VARIABLE_LOAN_RISK_ACCEPTANCE = "loanRiskAcceptance";
+    public static final String VARIABLE_MESSAGE = "message";
+    public static final String VARIABLE_STATUS_LOAN = "statusLoan";
+    public static final String VARIABLE_LOAN_RISK_ACCEPTANCE_V_GREEN = "green";
+    public static final String VARIABLE_LOAN_RISK_ACCEPTANCE_V_YELLOW = "yellow";
+    public static final String VARIABLE_LOAN_RISK_ACCEPTANCE_V_RED = "red";
     Logger logger = LoggerFactory.getLogger(LoanDecisionWorker.class.getName());
 
     @JobWorker(type = "loan-decision")
@@ -20,17 +27,18 @@ public class LoanDecisionWorker {
                                             @Variable(name = "amount") Integer amount
     ) {
         long begin = System.currentTimeMillis();
-        String acceptance = "red";
+        String acceptance = VARIABLE_LOAN_RISK_ACCEPTANCE_V_RED;
         String message = "";
         if (amount < 500) {
-            acceptance = "green";
+            acceptance = VARIABLE_LOAN_RISK_ACCEPTANCE_V_GREEN;
             message = "Under $500, loan from any customer is accepted";
             // we need more time to validate this
         } else if (creditScore < 500) {
-            acceptance = "red";
+            acceptance = VARIABLE_LOAN_RISK_ACCEPTANCE_V_RED;
+
             message = "Not possible to give a loan";
         } else if (creditScore >= 800 && amount < 15000) {
-            acceptance = "green";
+            acceptance = VARIABLE_LOAN_RISK_ACCEPTANCE_V_GREEN;
             message = "Good customer, medium loan accepted";
         } else {
 
@@ -41,7 +49,7 @@ public class LoanDecisionWorker {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            acceptance = "yellow";
+            acceptance = VARIABLE_LOAN_RISK_ACCEPTANCE_V_YELLOW;
         }
 
         if (amount > 10000) {
@@ -52,12 +60,23 @@ public class LoanDecisionWorker {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            message = "Very border line customer, deep review recommended";
+            message += "...deep review..";
 
         }
 
+        // We lie a litle: we set the acceptance here
+        Loan.STATUSLOAN statusLoan;
+        if (acceptance.equals(VARIABLE_LOAN_RISK_ACCEPTANCE_V_YELLOW)) {
+            statusLoan = Loan.STATUSLOAN.REVIEW;
+        } else if (acceptance.equals(VARIABLE_LOAN_RISK_ACCEPTANCE_V_RED)) {
+            statusLoan = Loan.STATUSLOAN.REJECTED;
+        } else {
+            statusLoan = Loan.STATUSLOAN.ACCEPTED;
+        }
 
         logger.info("LoanDecisionWorker [{}] timeForDecision {} ms message: {}", acceptance, System.currentTimeMillis() - begin, message);
-        return Map.of("loanAcceptance", acceptance, "message", message);
+        return Map.of(VARIABLE_LOAN_RISK_ACCEPTANCE, acceptance,
+                VARIABLE_STATUS_LOAN, statusLoan.name(),
+                VARIABLE_MESSAGE, message);
     }
 }

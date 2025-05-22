@@ -1,5 +1,6 @@
 package com.camunda.loan.worker;
 
+import com.camunda.loan.serviceloan.Loan;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.spring.client.annotation.JobWorker;
@@ -17,7 +18,8 @@ public class LoanNotificationAcceptedWorker {
     @JobWorker(type = "loan-notification-accepted")
     public Map<String,Object> loanNotificationRejected(JobClient jobClient, @Variable(name="loanId") String loanId) {
         logger.info("Loan [{}] is accepted", loanId);
-        return Map.of("messageCustomer", "Congratulations! Your loan was approved.");
+        return Map.of("messageCustomer", "Congratulations! Your loan was approved.",
+                LoanDecisionWorker.VARIABLE_STATUS_LOAN, Loan.STATUSLOAN.ACCEPTED.name());
     }
 
 }
